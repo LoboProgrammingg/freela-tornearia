@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ object.numero }} - Tornearia Jair{% endblock %}
+{% block page_title %}{{ object.numero }}{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <!-- Header Card -->
+    <div class="card p-4">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h2 class="text-xl font-bold text-slate-800">{{ object.numero }}</h2>
+                    {% if object.status == 'em_andamento' %}
+                    <span class="badge badge-warning">Em Andamento</span>
+                    {% elif object.status == 'concluido' %}
+                    <span class="badge badge-success">Concluído</span>
+                    {% else %}
+                    <span class="badge badge-danger">Cancelado</span>
+                    {% endif %}
+                </div>
+                <p class="text-sm text-slate-500 mt-1">
+                    {{ object.data_entrada|date:"d/m/Y" }}
+                    {% if object.data_conclusao %} → {{ object.data_conclusao|date:"d/m/Y" }}{% endif %}
+                </p>
+            </div>
+            <div class="text-right">
+                <p class="text-2xl font-bold text-slate-800">R$ {{ object.total|floatformat:2|intcomma }}</p>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4 pt-4 border-t border-slate-100">
+            <div>
+                <p class="text-xs text-slate-400 uppercase">Cliente</p>
+                <p class="text-sm font-medium text-slate-700 mt-0.5">{{ object.destinatario_nome }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-slate-400 uppercase">Pagamento</p>
+                <p class="text-sm font-medium text-slate-700 mt-0.5">{{ object.get_forma_pagamento_display|default:"-" }}</p>
+            </div>
+            {% if object.orcamento %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase">Orçamento</p>
+                <a href="{% url 'orcamentos:orcamento_detail' object.orcamento.pk %}" class="text-sm font-medium text-primary-600 mt-0.5">{{ object.orcamento.numero }}</a>
+            </div>
+            {% endif %}
+            <div>
+                <p class="text-xs text-slate-400 uppercase">Tipo</p>
+                <p class="text-sm font-medium text-slate-700 mt-0.5">{% if object.numero_parcelas > 1 %}{{ object.numero_parcelas }}x{% else %}À Vista{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Itens -->
+    <div class="card overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100">
+            <h3 class="font-semibold text-slate-800">Itens</h3>
+        </div>
+        
+        <!-- Mobile: Lista de itens -->
+        <div class="divide-y divide-slate-100 lg:hidden">
+            {% for item in object.itens.all %}
+            <div class="p-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-medium text-slate-800">{{ item.item.nome }}</p>
+                        <p class="text-xs text-slate-400">{{ item.item.get_tipo_display }}</p>
+                    </div>
+                    <p class="font-semibold text-slate-800">R$ {{ item.total|floatformat:2|intcomma }}</p>
+                </div>
+                <div class="flex gap-4 mt-2 text-sm text-slate-500">
+                    <span>Qtd: {{ item.quantidade }}</span>
+                    <span>Unit: R$ {{ item.valor_unitario|floatformat:2 }}</span>
+                </div>
+            </div>
+            {% endfor %}
+            <div class="p-4 bg-slate-50">
+                {% if object.desconto > 0 %}
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-500">Subtotal</span>
+                    <span class="text-slate-700">R$ {{ object.subtotal|floatformat:2|intcomma }}</span>
+                </div>
+                <div class="flex justify-between text-sm mb-2">
+                    <span class="text-slate-500">Desconto ({{ object.desconto }}%)</span>
+                    <span class="text-red-600">- R$ {{ object.valor_desconto|floatformat:2|intcomma }}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between font-bold text-lg pt-2 border-t border-slate-200">
+                    <span>Total</span>
+                    <span>R$ {{ object.total|floatformat:2|intcomma }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Desktop: Tabela -->
+        <div class="hidden lg:block table-responsive">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Item</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Qtd</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Unitário</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for item in object.itens.all %}
+                    <tr>
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-slate-800">{{ item.item.nome }}</p>
+                            <p class="text-xs text-slate-400">{{ item.item.get_tipo_display }}</p>
+                        </td>
+                        <td class="px-4 py-3 text-center text-slate-700">{{ item.quantidade }}</td>
+                        <td class="px-4 py-3 text-right text-slate-700">R$ {{ item.valor_unitario|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3 text-right font-semibold text-slate-800">R$ {{ item.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="bg-slate-50">
+                    {% if object.desconto > 0 %}
+                    <tr>
+                        <td colspan="3" class="px-4 py-2 text-right text-sm text-slate-500">Subtotal</td>
+                        <td class="px-4 py-2 text-right text-sm">R$ {{ object.subtotal|floatformat:2|intcomma }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="3" class="px-4 py-2 text-right text-sm text-slate-500">Desconto ({{ object.desconto }}%)</td>
+                        <td class="px-4 py-2 text-right text-sm text-red-600">- R$ {{ object.valor_desconto|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endif %}
+                    <tr class="border-t border-slate-200">
+                        <td colspan="3" class="px-4 py-3 text-right font-bold">Total</td>
+                        <td class="px-4 py-3 text-right text-lg font-bold">R$ {{ object.total|floatformat:2|intcomma }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    {% if object.observacoes %}
+    <div class="card p-4">
+        <p class="text-xs text-slate-400 uppercase mb-1">Observações</p>
+        <p class="text-sm text-slate-700">{{ object.observacoes|linebreaks }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Controle de Parcelas -->
+    {% if object.parcelas.exists %}
+    <div class="card overflow-hidden">
+        <div class="px-4 py-3 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <h3 class="font-semibold text-slate-800">Pagamentos</h3>
+            {% if object.pagamento_completo %}
+            <span class="badge badge-success">Quitado</span>
+            {% else %}
+            <span class="badge badge-warning">Pendente: R$ {{ object.valor_pendente|floatformat:2|intcomma }}</span>
+            {% endif %}
+        </div>
+        
+        <!-- Mobile: Lista de parcelas -->
+        <div class="divide-y divide-slate-100 lg:hidden">
+            {% for parcela in object.parcelas.all %}
+            <div class="p-4 {% if parcela.vencida %}bg-red-50{% elif parcela.pago %}bg-green-50{% endif %}">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-medium text-slate-800">Parcela {{ parcela.numero }}/{{ object.numero_parcelas }}</p>
+                        <p class="text-sm text-slate-500">Venc: {{ parcela.data_vencimento|date:"d/m/Y" }}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-semibold text-slate-800">R$ {{ parcela.valor|floatformat:2|intcomma }}</p>
+                        {% if parcela.pago %}
+                        <span class="badge badge-success text-xs">Pago</span>
+                        {% elif parcela.vencida %}
+                        <span class="badge badge-danger text-xs">Vencida</span>
+                        {% else %}
+                        <span class="badge badge-warning text-xs">Pendente</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% if not parcela.pago %}
+                <a href="{% url 'financeiro:parcela_pagar' parcela.pk %}" 
+                   onclick="return confirm('Confirmar recebimento?')"
+                   class="btn btn-success w-full mt-3 text-sm">
+                    Confirmar Pagamento
+                </a>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Desktop: Tabela -->
+        <div class="hidden lg:block table-responsive">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Parcela</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Valor</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Vencimento</th>
+                        <th class="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Ação</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for parcela in object.parcelas.all %}
+                    <tr class="{% if parcela.vencida %}bg-red-50{% elif parcela.pago %}bg-green-50{% endif %}">
+                        <td class="px-4 py-3 font-medium text-slate-800">{{ parcela.numero }}/{{ object.numero_parcelas }}</td>
+                        <td class="px-4 py-3 text-right font-semibold text-slate-800">R$ {{ parcela.valor|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3 text-center text-slate-600">{{ parcela.data_vencimento|date:"d/m/Y" }}</td>
+                        <td class="px-4 py-3 text-center">
+                            {% if parcela.pago %}
+                            <span class="badge badge-success">Pago</span>
+                            {% elif parcela.vencida %}
+                            <span class="badge badge-danger">Vencida</span>
+                            {% else %}
+                            <span class="badge badge-warning">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            {% if not parcela.pago %}
+                            <a href="{% url 'financeiro:parcela_pagar' parcela.pk %}" 
+                               onclick="return confirm('Confirmar recebimento?')"
+                               class="btn btn-success text-xs px-2 py-1">Confirmar</a>
+                            {% else %}
+                            <span class="text-slate-400 text-sm">{{ parcela.data_pagamento|date:"d/m/Y" }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Ações -->
+    <div class="card p-4">
+        <div class="flex flex-col gap-3">
+            <!-- Botão PDF destaque -->
+            <a href="{% url 'financeiro:venda_comprovante' object.pk %}" target="_blank" 
+               class="btn btn-primary w-full justify-center py-3">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m.75 12l3 3m0 0l3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                Gerar Comprovante PDF
+            </a>
+            
+            {% if object.status == 'em_andamento' %}
+            <div class="grid grid-cols-2 gap-2">
+                <a href="{% url 'financeiro:venda_update' object.pk %}" class="btn btn-secondary justify-center">Editar</a>
+                <a href="{% url 'financeiro:venda_concluir' object.pk %}" onclick="return confirm('Concluir esta venda?')" class="btn btn-success justify-center">Concluir</a>
+            </div>
+            <a href="{% url 'financeiro:venda_cancelar' object.pk %}" onclick="return confirm('Cancelar esta venda?')" class="btn btn-danger w-full justify-center">
+                Cancelar Venda
+            </a>
+            {% endif %}
+            
+            <div class="flex gap-2 pt-2 border-t border-slate-100">
+                <a href="{% url 'financeiro:venda_list' %}" class="btn btn-secondary flex-1 justify-center">Voltar</a>
+                <a href="{% url 'financeiro:venda_delete' object.pk %}" class="btn btn-danger justify-center" onclick="return confirm('Excluir permanentemente?')">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

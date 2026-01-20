@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Orçamentos - Tornearia Jair{% endblock %}
+{% block page_title %}Orçamentos{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <form method="get" class="flex-1 flex gap-2">
+            <div class="relative flex-1 max-w-md">
+                <input type="text" name="busca" value="{{ request.GET.busca }}" placeholder="Buscar por número, cliente..."
+                       class="block w-full rounded-md border-gray-300 pr-10 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+            </div>
+            <select name="status" onchange="this.form.submit()" class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                <option value="">Todos os status</option>
+                <option value="pendente" {% if status_filtro == 'pendente' %}selected{% endif %}>Pendente</option>
+                <option value="aprovado" {% if status_filtro == 'aprovado' %}selected{% endif %}>Aprovado</option>
+                <option value="rejeitado" {% if status_filtro == 'rejeitado' %}selected{% endif %}>Rejeitado</option>
+                <option value="convertido" {% if status_filtro == 'convertido' %}selected{% endif %}>Convertido</option>
+            </select>
+            <button type="submit" class="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200">
+                <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </button>
+        </form>
+        <a href="{% url 'orcamentos:orcamento_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-900 hover:bg-gray-800">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Novo Orçamento
+        </a>
+    </div>
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Número</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliente/Empresa</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Emissão</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Validade</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="relative px-6 py-3"><span class="sr-only">Ações</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for orcamento in orcamentos %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <a href="{% url 'orcamentos:orcamento_detail' orcamento.pk %}" class="text-sm font-medium text-blue-600 hover:text-blue-900">
+                                {{ orcamento.numero }}
+                            </a>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ orcamento.destinatario_nome }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ orcamento.data_emissao|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ orcamento.validade|date:"d/m/Y" }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">R$ {{ orcamento.total|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if orcamento.status == 'pendente' %}
+                            <span class="inline-flex rounded-full bg-yellow-100 px-2 text-xs font-semibold leading-5 text-yellow-800">Pendente</span>
+                            {% elif orcamento.status == 'aprovado' %}
+                            <span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">Aprovado</span>
+                            {% elif orcamento.status == 'rejeitado' %}
+                            <span class="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">Rejeitado</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full bg-blue-100 px-2 text-xs font-semibold leading-5 text-blue-800">Convertido</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'orcamentos:orcamento_detail' orcamento.pk %}" class="text-gray-600 hover:text-gray-900 mr-2">Ver</a>
+                            <a href="{% url 'orcamentos:orcamento_pdf' orcamento.pk %}" class="text-blue-600 hover:text-blue-900 mr-2">PDF</a>
+                            {% if orcamento.status == 'pendente' %}
+                            <a href="{% url 'orcamentos:orcamento_update' orcamento.pk %}" class="text-gray-600 hover:text-gray-900">Editar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <p class="text-sm">Nenhum orçamento cadastrado</p>
+                            <a href="{% url 'orcamentos:orcamento_create' %}" class="mt-2 inline-block text-sm text-gray-900 hover:underline">Criar primeiro orçamento</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Serviço - Tornearia Jair{% endblock %}
+{% block page_title %}{% if object %}Editar Serviço {{ object.numero }}{% else %}Novo Serviço{% endif %}{% endblock %}
+
+{% block content %}
+<div x-data="servicoForm()">
+    <form method="post" class="space-y-5">
+        {% csrf_token %}
+        
+        <!-- CLIENTE -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-800 mb-5 flex items-center">
+                <span class="bg-primary-500 text-white rounded-lg w-7 h-7 flex items-center justify-center text-sm mr-3">1</span>
+                Cliente
+            </h3>
+            
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="id_cliente" class="block text-sm font-medium text-slate-600 mb-1.5">Pessoa Física</label>
+                    <select name="cliente" id="id_cliente" class="block w-full">
+                        <option value="">Selecione um cliente...</option>
+                        {% for cliente in clientes %}
+                        <option value="{{ cliente.id }}" {% if form.cliente.value == cliente.id or object.cliente_id == cliente.id %}selected{% endif %}>
+                            {{ cliente.nome }}{% if cliente.cpf %} ({{ cliente.cpf }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="id_empresa" class="block text-sm font-medium text-slate-600 mb-1.5">Pessoa Jurídica</label>
+                    <select name="empresa" id="id_empresa" class="block w-full">
+                        <option value="">Selecione uma empresa...</option>
+                        {% for empresa in empresas %}
+                        <option value="{{ empresa.id }}" {% if form.empresa.value == empresa.id or object.empresa_id == empresa.id %}selected{% endif %}>
+                            {{ empresa.nome }}{% if empresa.cnpj %} ({{ empresa.cnpj }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- ITENS DO SERVIÇO -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-800 mb-5 flex items-center">
+                <span class="bg-primary-500 text-white rounded-lg w-7 h-7 flex items-center justify-center text-sm mr-3">2</span>
+                Serviços e Produtos
+            </h3>
+            
+            <div class="overflow-x-auto rounded-lg border border-slate-200">
+                <table class="min-w-full divide-y divide-slate-200">
+                    <thead>
+                        <tr class="bg-slate-50">
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Item</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase w-24">Qtd</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase w-32">Valor Unit.</th>
+                            <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase w-32">Total</th>
+                            <th class="px-4 py-3 w-12"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="(item, index) in itens" :key="index">
+                            <tr class="hover:bg-slate-50/50">
+                                <td class="px-4 py-3">
+                                    <select :name="'item_id[]'" x-model="item.item_id" @change="atualizarPreco(index)" class="block w-full">
+                                        <option value="">Selecione...</option>
+                                        {% for item in itens %}
+                                        <option value="{{ item.id }}" data-preco="{{ item.preco }}">
+                                            [{{ item.get_tipo_display }}] {{ item.nome }} - R$ {{ item.preco|floatformat:2 }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" :name="'quantidade[]'" x-model="item.quantidade" min="1" class="block w-full">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <input type="number" :name="'valor_unitario[]'" x-model="item.valor_unitario" step="0.01" class="block w-full">
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-sm font-semibold text-slate-700">R$ <span x-text="(item.quantidade * item.valor_unitario).toFixed(2)"></span></span>
+                                </td>
+                                <td class="px-4 py-3">
+                                    <button type="button" @click="removerItem(index)" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" x-show="itens.length > 1">
+                                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            
+            <button type="button" @click="adicionarItem()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Adicionar Item
+            </button>
+        </div>
+
+        <!-- PAGAMENTO -->
+        <div class="bg-white rounded-xl border border-slate-200 p-6">
+            <h3 class="text-base font-semibold text-slate-800 mb-5 flex items-center">
+                <span class="bg-primary-500 text-white rounded-lg w-7 h-7 flex items-center justify-center text-sm mr-3">3</span>
+                Pagamento
+            </h3>
+            
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label for="id_data_entrada" class="block text-sm font-medium text-slate-600 mb-1.5">Data *</label>
+                    <input type="date" name="data_entrada" id="id_data_entrada" 
+                           value="{% if object.data_entrada %}{{ object.data_entrada|date:'Y-m-d' }}{% else %}{{ form.data_entrada.value|date:'Y-m-d' }}{% endif %}" 
+                           required class="block w-full">
+                </div>
+                
+                <div>
+                    <label for="id_forma_pagamento" class="block text-sm font-medium text-slate-600 mb-1.5">Forma de Pagamento</label>
+                    <select name="forma_pagamento" id="id_forma_pagamento" class="block w-full">
+                        <option value="">Selecione...</option>
+                        <option value="dinheiro" {% if form.forma_pagamento.value == 'dinheiro' or object.forma_pagamento == 'dinheiro' %}selected{% endif %}>Dinheiro</option>
+                        <option value="pix" {% if form.forma_pagamento.value == 'pix' or object.forma_pagamento == 'pix' %}selected{% endif %}>PIX</option>
+                        <option value="cartao_debito" {% if form.forma_pagamento.value == 'cartao_debito' or object.forma_pagamento == 'cartao_debito' %}selected{% endif %}>Cartão Débito</option>
+                        <option value="cartao_credito" {% if form.forma_pagamento.value == 'cartao_credito' or object.forma_pagamento == 'cartao_credito' %}selected{% endif %}>Cartão Crédito</option>
+                        <option value="boleto" {% if form.forma_pagamento.value == 'boleto' or object.forma_pagamento == 'boleto' %}selected{% endif %}>Boleto</option>
+                        <option value="transferencia" {% if form.forma_pagamento.value == 'transferencia' or object.forma_pagamento == 'transferencia' %}selected{% endif %}>Transferência</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="id_desconto" class="block text-sm font-medium text-slate-600 mb-1.5">Desconto (%)</label>
+                    <input type="number" name="desconto" id="id_desconto" 
+                           value="{% if object.desconto %}{{ object.desconto }}{% else %}{{ form.desconto.value|default:0 }}{% endif %}" 
+                           step="0.01" min="0" max="100"
+                           class="block w-full">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-slate-600 mb-1.5">Parcelamento</label>
+                    <select name="numero_parcelas" id="id_numero_parcelas" x-model="numeroParcelas" class="block w-full">
+                        <option value="1">À Vista (1x)</option>
+                        <option value="2" {% if object.numero_parcelas == 2 %}selected{% endif %}>2x</option>
+                        <option value="3" {% if object.numero_parcelas == 3 %}selected{% endif %}>3x</option>
+                        <option value="4" {% if object.numero_parcelas == 4 %}selected{% endif %}>4x</option>
+                        <option value="5" {% if object.numero_parcelas == 5 %}selected{% endif %}>5x</option>
+                        <option value="6" {% if object.numero_parcelas == 6 %}selected{% endif %}>6x</option>
+                        <option value="7" {% if object.numero_parcelas == 7 %}selected{% endif %}>7x</option>
+                        <option value="8" {% if object.numero_parcelas == 8 %}selected{% endif %}>8x</option>
+                        <option value="9" {% if object.numero_parcelas == 9 %}selected{% endif %}>9x</option>
+                        <option value="10" {% if object.numero_parcelas == 10 %}selected{% endif %}>10x</option>
+                        <option value="11" {% if object.numero_parcelas == 11 %}selected{% endif %}>11x</option>
+                        <option value="12" {% if object.numero_parcelas == 12 %}selected{% endif %}>12x</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Campo oculto para tipo_pagamento -->
+            <input type="hidden" name="tipo_pagamento" :value="numeroParcelas > 1 ? 'parcelado' : 'a_vista'">
+            
+            <!-- Informação de parcelamento -->
+            <div x-show="numeroParcelas > 1" x-transition class="mt-5 p-4 bg-primary-50 rounded-lg border border-primary-100">
+                <p class="text-sm text-primary-700 flex items-start gap-2">
+                    <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z" />
+                    </svg>
+                    As parcelas serão geradas automaticamente ao salvar o serviço. Você poderá marcar cada parcela como paga individualmente.
+                </p>
+            </div>
+            
+            <div class="mt-5">
+                <label for="id_observacoes" class="block text-sm font-medium text-slate-600 mb-1.5">Observações</label>
+                <textarea name="observacoes" id="id_observacoes" rows="2" class="block w-full">{% if object.observacoes %}{{ object.observacoes }}{% else %}{{ form.observacoes.value|default:'' }}{% endif %}</textarea>
+            </div>
+        </div>
+
+        <!-- Botões de ação -->
+        <div class="flex justify-end gap-3">
+            <a href="{% url 'financeiro:venda_list' %}" class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">
+                Cancelar
+            </a>
+            <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                </svg>
+                {% if object %}Salvar{% else %}Registrar Serviço{% endif %}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function servicoForm() {
+    return {
+        numeroParcelas: '{{ object.numero_parcelas|default:1 }}',
+        itens: [
+            {% if itens_venda %}
+                {% for item in itens_venda %}
+                { item_id: '{{ item.item_id }}', quantidade: {{ item.quantidade }}, valor_unitario: {{ item.valor_unitario }} },
+                {% endfor %}
+            {% else %}
+            { item_id: '', quantidade: 1, valor_unitario: 0 }
+            {% endif %}
+        ],
+        
+        adicionarItem() {
+            this.itens.push({ item_id: '', quantidade: 1, valor_unitario: 0 });
+        },
+        
+        removerItem(index) {
+            if (this.itens.length > 1) {
+                this.itens.splice(index, 1);
+            }
+        },
+        
+        atualizarPreco(index) {
+            const select = document.querySelectorAll('select[name="item_id[]"]')[index];
+            const option = select.options[select.selectedIndex];
+            const preco = option.dataset.preco || 0;
+            this.itens[index].valor_unitario = parseFloat(preco);
+        }
+    }
+}
+</script>
+{% endblock %}

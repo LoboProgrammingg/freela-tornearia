@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurações - Tornearia Jair{% endblock %}
+{% block page_title %}Configurações da Empresa{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <div class="bg-white shadow rounded-lg">
+        <form method="post" enctype="multipart/form-data" class="p-6 space-y-6">
+            {% csrf_token %}
+            
+            <div>
+                <label for="id_nome" class="block text-sm font-medium text-gray-700">Nome da Empresa</label>
+                <input type="text" name="nome" id="id_nome" value="{{ object.nome }}" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="id_cnpj" class="block text-sm font-medium text-gray-700">CNPJ</label>
+                <input type="text" name="cnpj" id="id_cnpj" value="{{ object.cnpj }}"
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+            </div>
+
+            <div>
+                <label for="id_endereco" class="block text-sm font-medium text-gray-700">Endereço</label>
+                <textarea name="endereco" id="id_endereco" rows="3"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">{{ object.endereco }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <label for="id_telefone" class="block text-sm font-medium text-gray-700">Telefone</label>
+                    <input type="text" name="telefone" id="id_telefone" value="{{ object.telefone }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                </div>
+
+                <div>
+                    <label for="id_email" class="block text-sm font-medium text-gray-700">E-mail</label>
+                    <input type="email" name="email" id="id_email" value="{{ object.email }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label for="id_logo" class="block text-sm font-medium text-gray-700">Logo</label>
+                {% if object.logo %}
+                <div class="mt-2 mb-2">
+                    <img src="{{ object.logo.url }}" alt="Logo atual" class="h-20 w-auto">
+                </div>
+                {% endif %}
+                <input type="file" name="logo" id="id_logo" accept="image/*"
+                       class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-gray-900 file:text-white hover:file:bg-gray-800">
+            </div>
+
+            <div>
+                <label for="id_observacoes_padrao" class="block text-sm font-medium text-gray-700">Observações Padrão para Orçamentos</label>
+                <textarea name="observacoes_padrao" id="id_observacoes_padrao" rows="4"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">{{ object.observacoes_padrao }}</textarea>
+                <p class="mt-1 text-sm text-gray-500">Este texto será incluído automaticamente nos novos orçamentos.</p>
+            </div>
+
+            <div class="flex justify-end">
+                <button type="submit" class="bg-gray-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-gray-800">
+                    Salvar Configurações
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

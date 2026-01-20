@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ object.nome }} - Tornearia Jair{% endblock %}
+{% block page_title %}Detalhes da Empresa{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">{{ object.nome }}</h3>
+            {% if object.ativo %}
+            <span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">Ativo</span>
+            {% else %}
+            <span class="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">Inativo</span>
+            {% endif %}
+        </div>
+        <div class="px-4 py-5 sm:p-6">
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">CNPJ</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ object.cnpj|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Contato</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ object.nome_contato|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">Telefone</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ object.telefone|default:"-" }}</dd>
+                </div>
+                <div>
+                    <dt class="text-sm font-medium text-gray-500">E-mail</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ object.email|default:"-" }}</dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Endereço</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ object.endereco|default:"-"|linebreaks }}</dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Observações</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ object.observacoes|default:"-"|linebreaks }}</dd>
+                </div>
+            </dl>
+        </div>
+        <div class="px-4 py-4 sm:px-6 bg-gray-50 flex justify-end gap-3">
+            <a href="{% url 'cadastros:empresa_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100">
+                Voltar
+            </a>
+            <a href="{% url 'cadastros:empresa_update' object.pk %}" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800">
+                Editar
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

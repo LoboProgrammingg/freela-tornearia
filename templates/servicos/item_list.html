@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Serviços e Produtos - Tornearia Jair{% endblock %}
+{% block page_title %}Serviços e Produtos{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <form method="get" class="flex-1 flex gap-2">
+            <div class="relative flex-1 max-w-md">
+                <input type="text" name="busca" value="{{ request.GET.busca }}" placeholder="Buscar por nome..."
+                       class="block w-full rounded-md border-gray-300 pr-10 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+            </div>
+            <select name="tipo" onchange="this.form.submit()" class="rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                <option value="">Todos os tipos</option>
+                <option value="servico" {% if tipo_filtro == 'servico' %}selected{% endif %}>Serviços</option>
+                <option value="produto" {% if tipo_filtro == 'produto' %}selected{% endif %}>Produtos</option>
+            </select>
+            <button type="submit" class="px-4 py-2 bg-gray-100 rounded-md hover:bg-gray-200">
+                <svg class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                </svg>
+            </button>
+        </form>
+        <a href="{% url 'servicos:item_create' %}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gray-900 hover:bg-gray-800">
+            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Novo Item
+        </a>
+    </div>
+
+    {% if itens_estoque_baixo > 0 %}
+    <div class="rounded-md bg-yellow-50 p-4">
+        <div class="flex">
+            <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+            <div class="ml-3">
+                <p class="text-sm font-medium text-yellow-800">{{ itens_estoque_baixo }} produto(s) com estoque baixo</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="bg-white shadow rounded-lg overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Nome</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Preço</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Estoque</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th class="relative px-6 py-3"><span class="sr-only">Ações</span></th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in itens %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ item.id }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ item.nome }}</div>
+                            {% if item.descricao %}<div class="text-sm text-gray-500 truncate max-w-xs">{{ item.descricao|truncatewords:10 }}</div>{% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.tipo == 'servico' %}
+                            <span class="inline-flex rounded-full bg-blue-100 px-2 text-xs font-semibold leading-5 text-blue-800">Serviço</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-800">Produto</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">R$ {{ item.preco|floatformat:2|intcomma }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            {% if item.tipo == 'produto' %}
+                                <span class="{% if item.estoque_baixo %}text-red-600 font-medium{% else %}text-gray-900{% endif %}">
+                                    {{ item.quantidade_estoque }}
+                                </span>
+                                {% if item.estoque_baixo %}
+                                <span class="text-xs text-red-500">(baixo)</span>
+                                {% endif %}
+                            {% else %}
+                            <span class="text-gray-400">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            {% if item.ativo %}
+                            <span class="inline-flex rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">Ativo</span>
+                            {% else %}
+                            <span class="inline-flex rounded-full bg-red-100 px-2 text-xs font-semibold leading-5 text-red-800">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <a href="{% url 'servicos:item_update' item.pk %}" class="text-gray-600 hover:text-gray-900 mr-3">Editar</a>
+                            <a href="{% url 'servicos:item_delete' item.pk %}" class="text-red-600 hover:text-red-900">Excluir</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <p class="text-sm">Nenhum item cadastrado</p>
+                            <a href="{% url 'servicos:item_create' %}" class="mt-2 inline-block text-sm text-gray-900 hover:underline">Cadastrar primeiro item</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

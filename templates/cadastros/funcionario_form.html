@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Funcionário - Tornearia Jair{% endblock %}
+{% block page_title %}{% if object %}Editar Funcionário{% else %}Novo Funcionário{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <div class="bg-white shadow rounded-lg">
+        <form method="post" class="p-6 space-y-6">
+            {% csrf_token %}
+
+            <div>
+                <label for="id_nome" class="block text-sm font-medium text-gray-700">Nome *</label>
+                <input type="text" name="nome" id="id_nome" value="{{ form.nome.value|default:'' }}" required
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <label for="id_cargo" class="block text-sm font-medium text-gray-700">Cargo</label>
+                    <input type="text" name="cargo" id="id_cargo" value="{{ form.cargo.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                </div>
+
+                <div>
+                    <label for="id_salario" class="block text-sm font-medium text-gray-700">Salário Mensal *</label>
+                    <input type="number" name="salario" id="id_salario" value="{{ form.salario.value|default:'' }}" step="0.01" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <label for="id_data_admissao" class="block text-sm font-medium text-gray-700">Data de Admissão</label>
+                    <input type="date" name="data_admissao" id="id_data_admissao" value="{{ form.data_admissao.value|date:'Y-m-d' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                </div>
+
+                <div>
+                    <label for="id_telefone" class="block text-sm font-medium text-gray-700">Telefone</label>
+                    <input type="text" name="telefone" id="id_telefone" value="{{ form.telefone.value|default:'' }}"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                </div>
+            </div>
+
+            <div>
+                <label for="id_observacoes" class="block text-sm font-medium text-gray-700">Observações</label>
+                <textarea name="observacoes" id="id_observacoes" rows="3"
+                          class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">{{ form.observacoes.value|default:'' }}</textarea>
+            </div>
+
+            {% if object %}
+            <div>
+                <label for="id_status" class="block text-sm font-medium text-gray-700">Status</label>
+                <select name="status" id="id_status"
+                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-gray-900 focus:ring-gray-900 sm:text-sm">
+                    <option value="ativo" {% if form.status.value == 'ativo' %}selected{% endif %}>Ativo</option>
+                    <option value="inativo" {% if form.status.value == 'inativo' %}selected{% endif %}>Inativo</option>
+                </select>
+            </div>
+            {% endif %}
+
+            <div class="flex justify-end gap-3">
+                <a href="{% url 'cadastros:funcionario_list' %}" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    Cancelar
+                </a>
+                <button type="submit" class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800">
+                    {% if object %}Salvar Alterações{% else %}Cadastrar Funcionário{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

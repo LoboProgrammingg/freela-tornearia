@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Serviços - Tornearia Jair{% endblock %}
+{% block page_title %}Serviços{% endblock %}
+
+{% block content %}
+<div class="space-y-4">
+    <!-- Filtros e Ação Principal -->
+    <div class="flex flex-col gap-3">
+        <form method="get" class="flex flex-col sm:flex-row gap-2">
+            <div class="flex-1">
+                <input type="text" name="busca" value="{{ request.GET.busca }}" placeholder="Buscar por número ou cliente..."
+                       class="w-full">
+            </div>
+            <select name="status" onchange="this.form.submit()" class="w-full sm:w-auto">
+                <option value="">Todos</option>
+                <option value="em_andamento" {% if status_filtro == 'em_andamento' %}selected{% endif %}>Em Andamento</option>
+                <option value="concluido" {% if status_filtro == 'concluido' %}selected{% endif %}>Concluído</option>
+                <option value="cancelado" {% if status_filtro == 'cancelado' %}selected{% endif %}>Cancelado</option>
+            </select>
+        </form>
+        
+        <a href="{% url 'financeiro:venda_create' %}" class="btn btn-primary w-full sm:w-auto sm:hidden">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Novo Serviço
+        </a>
+        
+        <a href="{% url 'financeiro:venda_create' %}" class="btn btn-primary hidden sm:inline-flex self-end">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Novo Serviço
+        </a>
+    </div>
+
+    <!-- Lista Mobile (Cards) -->
+    <div class="space-y-3 lg:hidden">
+        {% for venda in vendas %}
+        <a href="{% url 'financeiro:venda_detail' venda.pk %}" class="card block p-4 active:bg-slate-50">
+            <div class="flex items-start justify-between gap-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="font-semibold text-slate-800">{{ venda.numero }}</span>
+                        {% if venda.status == 'em_andamento' %}
+                        <span class="badge badge-warning">Andamento</span>
+                        {% elif venda.status == 'concluido' %}
+                        <span class="badge badge-success">Concluído</span>
+                        {% else %}
+                        <span class="badge badge-danger">Cancelado</span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-slate-600 mt-1 truncate">{{ venda.destinatario_nome }}</p>
+                    <p class="text-xs text-slate-400 mt-0.5">{{ venda.data_entrada|date:"d/m/Y" }}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-slate-800">R$ {{ venda.total|floatformat:2|intcomma }}</p>
+                    <svg class="w-5 h-5 text-slate-300 ml-auto mt-1" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                    </svg>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="card p-8 text-center">
+            <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l6.837-5.63" />
+                </svg>
+            </div>
+            <p class="text-slate-500">Nenhum serviço cadastrado</p>
+            <a href="{% url 'financeiro:venda_create' %}" class="text-primary-600 font-medium text-sm mt-2 inline-block">Registrar primeiro serviço</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Tabela Desktop -->
+    <div class="card hidden lg:block overflow-hidden">
+        <div class="table-responsive">
+            <table class="w-full">
+                <thead class="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Número</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Cliente</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Data</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Total</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                        <th class="px-4 py-3 text-right text-xs font-medium text-slate-500 uppercase">Ações</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for venda in vendas %}
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3">
+                            <a href="{% url 'financeiro:venda_detail' venda.pk %}" class="font-medium text-primary-600 hover:text-primary-700">
+                                {{ venda.numero }}
+                            </a>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-slate-700">{{ venda.destinatario_nome }}</td>
+                        <td class="px-4 py-3 text-sm text-slate-500">{{ venda.data_entrada|date:"d/m/Y" }}</td>
+                        <td class="px-4 py-3 text-sm font-semibold text-slate-800">R$ {{ venda.total|floatformat:2|intcomma }}</td>
+                        <td class="px-4 py-3">
+                            {% if venda.status == 'em_andamento' %}
+                            <span class="badge badge-warning">Em Andamento</span>
+                            {% elif venda.status == 'concluido' %}
+                            <span class="badge badge-success">Concluído</span>
+                            {% else %}
+                            <span class="badge badge-danger">Cancelado</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right">
+                            <div class="flex items-center justify-end gap-1">
+                                <a href="{% url 'financeiro:venda_detail' venda.pk %}" class="btn btn-secondary text-xs px-2 py-1">Ver</a>
+                                <a href="{% url 'financeiro:venda_comprovante' venda.pk %}" target="_blank" class="btn btn-secondary text-xs px-2 py-1">PDF</a>
+                                {% if venda.status == 'em_andamento' %}
+                                <a href="{% url 'financeiro:venda_concluir' venda.pk %}" onclick="return confirm('Deseja concluir este serviço?')" class="btn btn-success text-xs px-2 py-1">Concluir</a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="px-4 py-12 text-center text-slate-500">
+                            <p>Nenhum serviço cadastrado</p>
+                            <a href="{% url 'financeiro:venda_create' %}" class="text-primary-600 font-medium text-sm mt-2 inline-block">Registrar primeiro serviço</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

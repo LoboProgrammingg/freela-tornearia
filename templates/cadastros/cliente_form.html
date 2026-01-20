@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Cliente - Tornearia Jair{% endblock %}
+{% block page_title %}{% if object %}Editar Cliente{% else %}Novo Cliente{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl">
+    <div class="bg-white rounded-xl border border-slate-200">
+        <form method="post" class="p-6 space-y-5">
+            {% csrf_token %}
+            
+            {% if form.errors %}
+            <div class="rounded-lg bg-red-50 border border-red-200 p-4">
+                <div class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                    </svg>
+                    <div class="text-sm text-red-700">
+                        <p class="font-medium mb-1">Corrija os erros abaixo:</p>
+                        <ul class="list-disc pl-5 space-y-0.5">
+                            {% for field in form %}
+                                {% for error in field.errors %}
+                                <li>{{ field.label }}: {{ error }}</li>
+                                {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div>
+                <label for="id_nome" class="block text-sm font-medium text-slate-600 mb-1.5">Nome *</label>
+                <input type="text" name="nome" id="id_nome" value="{{ form.nome.value|default:'' }}" required
+                       class="block w-full" placeholder="Nome completo do cliente">
+            </div>
+
+            <div>
+                <label for="id_cpf" class="block text-sm font-medium text-slate-600 mb-1.5">CPF</label>
+                <input type="text" name="cpf" id="id_cpf" value="{{ form.cpf.value|default:'' }}" placeholder="000.000.000-00"
+                       class="block w-full">
+            </div>
+
+            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                <div>
+                    <label for="id_telefone" class="block text-sm font-medium text-slate-600 mb-1.5">Telefone</label>
+                    <input type="text" name="telefone" id="id_telefone" value="{{ form.telefone.value|default:'' }}"
+                           class="block w-full" placeholder="(00) 00000-0000">
+                </div>
+
+                <div>
+                    <label for="id_email" class="block text-sm font-medium text-slate-600 mb-1.5">E-mail</label>
+                    <input type="email" name="email" id="id_email" value="{{ form.email.value|default:'' }}"
+                           class="block w-full" placeholder="email@exemplo.com">
+                </div>
+            </div>
+
+            <div>
+                <label for="id_endereco" class="block text-sm font-medium text-slate-600 mb-1.5">Endereço</label>
+                <textarea name="endereco" id="id_endereco" rows="2" class="block w-full" placeholder="Rua, número, bairro, cidade...">{{ form.endereco.value|default:'' }}</textarea>
+            </div>
+
+            <div>
+                <label for="id_observacoes" class="block text-sm font-medium text-slate-600 mb-1.5">Observações</label>
+                <textarea name="observacoes" id="id_observacoes" rows="2" class="block w-full" placeholder="Informações adicionais...">{{ form.observacoes.value|default:'' }}</textarea>
+            </div>
+
+            {% if object %}
+            <div class="pt-2">
+                <label class="inline-flex items-center gap-2.5 cursor-pointer">
+                    <input type="checkbox" name="ativo" {% if form.ativo.value %}checked{% endif %} class="rounded">
+                    <span class="text-sm text-slate-700">Cliente ativo</span>
+                </label>
+            </div>
+            {% endif %}
+
+            <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">
+                <a href="{% url 'cadastros:cliente_list' %}" class="px-5 py-2.5 rounded-lg text-sm font-medium text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors">
+                    Cancelar
+                </a>
+                <button type="submit" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium text-white bg-primary-500 hover:bg-primary-600 transition-colors shadow-sm">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                    {% if object %}Salvar Alterações{% else %}Cadastrar Cliente{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
