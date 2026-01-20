@@ -13,7 +13,15 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-pro
 DEBUG = config('DEBUG', default=True, cast=bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost,http://127.0.0.1', cast=Csv())
+
+# CSRF_TRUSTED_ORIGINS precisa incluir o protocolo (https://)
+csrf_origins = config('CSRF_TRUSTED_ORIGINS', default='http://localhost,http://127.0.0.1', cast=Csv())
+CSRF_TRUSTED_ORIGINS = []
+for origin in csrf_origins:
+    if not origin.startswith(('http://', 'https://')):
+        CSRF_TRUSTED_ORIGINS.append(f'https://{origin}')
+    else:
+        CSRF_TRUSTED_ORIGINS.append(origin)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
