@@ -77,25 +77,47 @@ Acesse [railway.app](https://railway.app) e crie uma conta.
 ### 3. Adicione um banco PostgreSQL
 - No projeto, clique em "New"
 - Selecione "Database" > "PostgreSQL"
+- O Railway vai criar automaticamente a variável `DATABASE_URL`
 
 ### 4. Configure as variáveis de ambiente
-No serviço da aplicação, adicione as seguintes variáveis:
+No serviço da aplicação (Settings > Variables), adicione:
 
-```
-SECRET_KEY=<gere-uma-chave-segura>
-DEBUG=False
-ALLOWED_HOSTS=seu-dominio.railway.app
-DATABASE_URL=${{Postgres.DATABASE_URL}}
+| Variável | Valor |
+|----------|-------|
+| `DEBUG` | `False` |
+| `SECRET_KEY` | `<gere-uma-chave-segura>` |
+| `ALLOWED_HOSTS` | `.railway.app,.up.railway.app` |
+| `CSRF_TRUSTED_ORIGINS` | `https://seu-projeto.up.railway.app` |
+
+**Para gerar uma SECRET_KEY segura:**
+```bash
+python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
 ```
 
-Para gerar uma SECRET_KEY segura:
-```python
-from django.core.management.utils import get_random_secret_key
-print(get_random_secret_key())
-```
+### 5. Conectar o PostgreSQL
+Na seção de variáveis do serviço da aplicação:
+- Clique em "Add Reference"
+- Selecione o serviço PostgreSQL
+- Adicione a referência `DATABASE_URL`
 
-### 5. Deploy automático
-O Railway fará o deploy automaticamente quando você fizer push para o repositório.
+### 6. Deploy automático
+O Railway fará o deploy automaticamente. O sistema criará automaticamente um usuário admin:
+- **Usuário**: `admin`
+- **Email**: `admin@tornearia.com`
+- **Senha**: `Admin@2026`
+
+**⚠️ IMPORTANTE**: Altere a senha do admin após o primeiro login!
+
+### 7. Acessar o sistema
+- URL do app: `https://seu-projeto.up.railway.app`
+- Admin Django: `https://seu-projeto.up.railway.app/admin/`
+
+### Troubleshooting Railway
+
+Se ocorrer erro de build:
+1. Verifique se todas as variáveis de ambiente estão configuradas
+2. Confira se o PostgreSQL está conectado corretamente
+3. Verifique os logs em: Deploy > View Logs
 
 ## Estrutura do Projeto
 
