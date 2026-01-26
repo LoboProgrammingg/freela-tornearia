@@ -6,8 +6,10 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from apps.core.views import healthcheck
 
 urlpatterns = [
+    path('health/', healthcheck, name='healthcheck'),
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
     path('cadastros/', include('apps.cadastros.urls')),

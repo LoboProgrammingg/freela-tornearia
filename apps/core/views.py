@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import TemplateView, UpdateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncMonth, TruncDay
 from django.utils import timezone
@@ -13,6 +13,11 @@ from decimal import Decimal
 from .models import ConfiguracaoEmpresa
 from apps.financeiro.models import Venda, Despesa, Parcela
 from apps.cadastros.models import Funcionario
+
+
+def healthcheck(request):
+    """Endpoint de healthcheck para o Railway."""
+    return HttpResponse("OK", status=200, content_type="text/plain")
 
 
 class DashboardView(LoginRequiredMixin, TemplateView):
