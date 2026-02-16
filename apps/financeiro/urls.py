@@ -13,6 +13,7 @@ urlpatterns = [
     path('vendas/<int:pk>/concluir/', views.concluir_venda, name='venda_concluir'),
     path('vendas/<int:pk>/cancelar/', views.cancelar_venda, name='venda_cancelar'),
     path('vendas/<int:pk>/comprovante/', views.gerar_comprovante_venda, name='venda_comprovante'),
+    path('vendas/<int:pk>/email/', views.enviar_email_venda, name='venda_email'),
     path('vendas/<int:pk>/gerar-parcelas/', views.gerar_parcelas_venda, name='venda_gerar_parcelas'),
     
     # Parcelas

@@ -15,6 +15,9 @@ from reportlab.lib.units import cm, mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image, HRFlowable
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT, TA_LEFT
 
+from django.core.mail import EmailMessage
+from django.conf import settings
+
 from .models import Venda, ItemVenda, Despesa, CategoriaDespesa, Parcela, FolhaPagamento
 from apps.cadastros.models import Cliente, Empresa, Funcionario
 from apps.servicos.models import Item
@@ -394,6 +397,69 @@ def gerar_comprovante_venda(request, pk):
     from django.conf import settings
     
     venda = get_object_or_404(Venda, pk=pk)
+    
+    buffer = _gerar_pdf_bytes_venda(venda)
+    
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="comprovante_{venda.numero}.pdf"'
+    return response
+
+
+@login_required
+def enviar_email_venda(request, pk):
+    """Envia o comprovante da venda/serviço por e-mail com PDF anexo."""
+    venda = get_object_or_404(Venda, pk=pk)
+    
+    destinatario_email = None
+    destinatario_nome = "Cliente"
+    
+    if venda.empresa:
+        destinatario_email = venda.empresa.email
+        destinatario_nome = venda.empresa.nome
+    elif venda.cliente:
+        destinatario_email = venda.cliente.email
+        destinatario_nome = venda.cliente.nome
+        
+    if not destinatario_email:
+        messages.error(request, 'O cliente/empresa não possui e-mail cadastrado.')
+        return redirect('financeiro:venda_detail', pk=pk)
+        
+    try:
+        # Gerar PDF
+        pdf_buffer = _gerar_pdf_bytes_venda(venda)
+        pdf_content = pdf_buffer.getvalue()
+        
+        assunto = f"Comprovante de Venda/Serviço {venda.numero} - Tornearia Jair"
+        mensagem = f'''Olá {destinatario_nome},
+        
+Segue em anexo o comprovante da Venda/Serviço {venda.numero}.
+
+Atenciosamente,
+Tornearia Jair
+'''
+        email = EmailMessage(
+            subject=assunto,
+            body=mensagem,
+            from_email=settings.EMAIL_HOST_USER,
+            to=[destinatario_email],
+        )
+        
+        email.attach(f"comprovante_{venda.numero}.pdf", pdf_content, 'application/pdf')
+        email.send()
+        
+        messages.success(request, f'E-mail enviado com sucesso para {destinatario_email}!')
+        
+    except Exception as e:
+        messages.error(request, f'Erro ao enviar e-mail: {str(e)}')
+        
+    return redirect('financeiro:venda_detail', pk=pk)
+
+
+def _gerar_pdf_bytes_venda(venda):
+    """Função auxiliar para gerar o PDF da venda e retornar o buffer."""
+    import os
+    from django.conf import settings
+    
     config = ConfiguracaoEmpresa.objects.first()
     
     buffer = BytesIO()
@@ -797,6 +863,11 @@ def gerar_comprovante_venda(request, pk):
     # ===== RODAPÉ =====
     elements.append(Spacer(1, 20))
     elements.append(HRFlowable(width="100%", thickness=1, color=COR_BORDA, spaceAfter=10))
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    return buffer
     
     rodape_texto = f"{nome_empresa}"
     if config:
