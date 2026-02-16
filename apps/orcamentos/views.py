@@ -5,6 +5,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.http import HttpResponse, JsonResponse
+from django.core.mail import EmailMessage
+from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
 from datetime import timedelta
@@ -221,6 +223,7 @@ def gerar_pdf_orcamento(request, pk):
     
     elements = []
     styles = getSampleStyleSheet()
+
     
     titulo_style = ParagraphStyle(
         'TituloStyle',
@@ -316,6 +319,167 @@ def gerar_pdf_orcamento(request, pk):
     doc.build(elements)
     
     buffer.seek(0)
+    return buffer
+
+@login_required
+def gerar_pdf_orcamento(request, pk):
+    """Gera PDF do orçamento."""
+    orcamento = get_object_or_404(Orcamento, pk=pk)
+    
+    buffer = _gerar_pdf_bytes(orcamento)
     response = HttpResponse(buffer, content_type='application/pdf')
     response['Content-Disposition'] = f'attachment; filename="orcamento_{orcamento.numero}.pdf"'
     return response
+
+@login_required
+def enviar_email_orcamento(request, pk):
+    """Envia o orçamento por e-mail com PDF anexo."""
+    orcamento = get_object_or_404(Orcamento, pk=pk)
+    
+    destinatario_email = None
+    destinatario_nome = "Cliente"
+    
+    if orcamento.empresa:
+        destinatario_email = orcamento.empresa.email
+        destinatario_nome = orcamento.empresa.nome
+    elif orcamento.cliente:
+        destinatario_email = orcamento.cliente.email
+        destinatario_nome = orcamento.cliente.nome
+        
+    if not destinatario_email:
+        messages.error(request, 'O cliente/empresa não possui e-mail cadastrado.')
+        return redirect('orcamentos:orcamento_detail', pk=pk)
+        
+    try:
+        # Gerar PDF
+        pdf_buffer = _gerar_pdf_bytes(orcamento)
+        pdf_content = pdf_buffer.getvalue()
+        
+        assunto = f"Orçamento {orcamento.numero} - Tornearia Jair"
+        mensagem = f"""Olá {destinatario_nome},
+        
+Segue em anexo o orçamento {orcamento.numero} solicitado.
+
+Atenciosamente,
+Tornearia Jair
+"""
+        email = EmailMessage(
+            subject=assunto,
+            body=mensagem,
+            from_email=settings.EMAIL_HOST_USER,
+            to=[destinatario_email],
+        )
+        
+        email.attach(f"orcamento_{orcamento.numero}.pdf", pdf_content, 'application/pdf')
+        email.send()
+        
+        messages.success(request, f'E-mail enviado com sucesso para {destinatario_email}!')
+        
+    except Exception as e:
+        messages.error(request, f'Erro ao enviar e-mail: {str(e)}')
+        
+    return redirect('orcamentos:orcamento_detail', pk=pk)
+
+def _gerar_pdf_bytes(orcamento):
+    """Função auxiliar para gerar o PDF do orçamento e retornar o buffer."""
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=2*cm, leftMargin=2*cm, topMargin=2*cm, bottomMargin=2*cm)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    titulo_style = ParagraphStyle(
+        'TituloStyle',
+        parent=styles['Heading1'],
+        fontSize=18,
+        alignment=TA_CENTER,
+        spaceAfter=20
+    )
+    
+    normal_style = ParagraphStyle(
+        'NormalStyle',
+        parent=styles['Normal'],
+        fontSize=10,
+        spaceAfter=6
+    )
+    
+    try:
+        config = ConfiguracaoEmpresa.objects.get(pk=1)
+        empresa_nome = config.nome
+        empresa_info = f"{config.endereco}\nTel: {config.telefone}\nEmail: {config.email}"
+        if config.cnpj:
+            empresa_info += f"\nCNPJ: {config.cnpj}"
+    except ConfiguracaoEmpresa.DoesNotExist:
+        empresa_nome = "Tornearia Jair"
+        empresa_info = ""
+    
+    elements.append(Paragraph(empresa_nome, titulo_style))
+    if empresa_info:
+        elements.append(Paragraph(empresa_info.replace('\n', '<br/>'), normal_style))
+    elements.append(Spacer(1, 20))
+    
+    elements.append(Paragraph(f"<b>ORÇAMENTO {orcamento.numero}</b>", titulo_style))
+    elements.append(Spacer(1, 10))
+    
+    info_style = ParagraphStyle('InfoStyle', parent=styles['Normal'], fontSize=10)
+    
+    destinatario = orcamento.empresa or orcamento.cliente
+    elements.append(Paragraph(f"<b>Cliente:</b> {destinatario.nome if destinatario else 'Não informado'}", info_style))
+    
+    if orcamento.empresa and orcamento.empresa.cnpj:
+        elements.append(Paragraph(f"<b>CNPJ:</b> {orcamento.empresa.cnpj}", info_style))
+    elif orcamento.cliente and orcamento.cliente.cpf:
+        elements.append(Paragraph(f"<b>CPF:</b> {orcamento.cliente.cpf}", info_style))
+    
+    elements.append(Paragraph(f"<b>Data de Emissão:</b> {orcamento.data_emissao.strftime('%d/%m/%Y')}", info_style))
+    elements.append(Paragraph(f"<b>Validade:</b> {orcamento.validade.strftime('%d/%m/%Y')}", info_style))
+    elements.append(Spacer(1, 20))
+    
+    data = [['Item', 'Descrição', 'Qtd', 'Valor Unit.', 'Total']]
+    for item in orcamento.itens.all():
+        data.append([
+            item.item.nome,
+            item.descricao_adicional or item.item.descricao or '-',
+            str(item.quantidade),
+            f"R$ {item.valor_unitario:.2f}",
+            f"R$ {item.total:.2f}"
+        ])
+    
+    table = Table(data, colWidths=[4*cm, 6*cm, 1.5*cm, 2.5*cm, 2.5*cm])
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (1, 1), (1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f9fafb')),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d1d5db')),
+        ('FONTSIZE', (0, 1), (-1, -1), 9),
+        ('TOPPADDING', (0, 1), (-1, -1), 8),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 20))
+    
+    totais_style = ParagraphStyle('TotaisStyle', parent=styles['Normal'], fontSize=11, alignment=TA_RIGHT)
+    elements.append(Paragraph(f"<b>Subtotal:</b> R$ {orcamento.subtotal:.2f}", totais_style))
+    if orcamento.desconto > 0:
+        elements.append(Paragraph(f"<b>Desconto ({orcamento.desconto}%):</b> - R$ {orcamento.valor_desconto:.2f}", totais_style))
+    elements.append(Paragraph(f"<b>TOTAL:</b> R$ {orcamento.total:.2f}", totais_style))
+    elements.append(Spacer(1, 30))
+    
+    if orcamento.condicoes_pagamento:
+        elements.append(Paragraph("<b>Condições de Pagamento:</b>", info_style))
+        elements.append(Paragraph(orcamento.condicoes_pagamento, normal_style))
+        elements.append(Spacer(1, 10))
+    
+    if orcamento.observacoes:
+        elements.append(Paragraph("<b>Observações:</b>", info_style))
+        elements.append(Paragraph(orcamento.observacoes, normal_style))
+    
+    doc.build(elements)
+    
+    buffer.seek(0)
+    return buffer

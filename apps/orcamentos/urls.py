@@ -13,4 +13,5 @@ urlpatterns = [
     path('<int:pk>/aprovar/', views.aprovar_orcamento, name='orcamento_aprovar'),
     path('<int:pk>/rejeitar/', views.rejeitar_orcamento, name='orcamento_rejeitar'),
     path('<int:pk>/converter/', views.converter_orcamento_venda, name='orcamento_converter'),
+    path('<int:pk>/email/', views.enviar_email_orcamento, name='orcamento_email'),
 ]
