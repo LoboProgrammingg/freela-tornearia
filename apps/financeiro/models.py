@@ -128,7 +128,7 @@ class Venda(models.Model):
     def concluir(self):
         """Conclui a venda, atualiza estoque e marca todas as parcelas como pagas."""
         self.status = 'concluido'
-        self.data_conclusao = timezone.now().date()
+        self.data_conclusao = timezone.localdate()
         for item_venda in self.itens.all():
             if item_venda.item.tipo == 'produto':
                 item_venda.item.atualizar_estoque(item_venda.quantidade, 'saida')
@@ -137,7 +137,7 @@ class Venda(models.Model):
         # Marcar todas as parcelas como pagas automaticamente
         for parcela in self.parcelas.filter(pago=False):
             parcela.pago = True
-            parcela.data_pagamento = timezone.now().date()
+            parcela.data_pagamento = timezone.localdate()
             parcela.save()
 
     def gerar_parcelas(self):
@@ -274,7 +274,7 @@ class Parcela(models.Model):
     def save(self, *args, **kwargs):
         """Override save para garantir data_pagamento quando pago."""
         if self.pago and not self.data_pagamento:
-            self.data_pagamento = timezone.now().date()
+            self.data_pagamento = timezone.localdate()
         elif not self.pago:
             self.data_pagamento = None
         super().save(*args, **kwargs)
@@ -282,7 +282,7 @@ class Parcela(models.Model):
     def marcar_como_pago(self):
         """Marca a parcela como paga."""
         self.pago = True
-        self.data_pagamento = timezone.now().date()
+        self.data_pagamento = timezone.localdate()
         self.save()
 
     @property
@@ -290,7 +290,7 @@ class Parcela(models.Model):
         """Verifica se a parcela está vencida."""
         if self.pago:
             return False
-        return self.data_vencimento < timezone.now().date()
+        return self.data_vencimento < timezone.localdate()
 
 
 class Despesa(models.Model):

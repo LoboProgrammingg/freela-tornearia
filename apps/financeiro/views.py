@@ -64,7 +64,7 @@ class VendaCreateView(LoginRequiredMixin, CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
-        initial['data_entrada'] = timezone.now().date()
+        initial['data_entrada'] = timezone.localdate()
         return initial
 
     def get_context_data(self, **kwargs):
@@ -313,7 +313,7 @@ class DespesaCreateView(LoginRequiredMixin, CreateView):
 
     def get_initial(self):
         initial = super().get_initial()
-        initial['data'] = timezone.now().date()
+        initial['data'] = timezone.localdate()
         return initial
 
     def get_context_data(self, **kwargs):

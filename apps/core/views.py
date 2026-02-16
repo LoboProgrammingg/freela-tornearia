@@ -27,7 +27,7 @@ class DashboardView(LoginRequiredMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         
-        hoje = timezone.now().date()
+        hoje = timezone.localdate()
         primeiro_dia_mes = hoje.replace(day=1)
         
         periodo = self.request.GET.get('periodo', 'mes')
@@ -163,7 +163,7 @@ class ConfiguracaoEmpresaView(LoginRequiredMixin, UpdateView):
 @login_required
 def dashboard_data_api(request):
     """API para dados do dashboard (gráficos)."""
-    hoje = timezone.now().date()
+    hoje = timezone.localdate()
     periodo = request.GET.get('periodo', 'mes')
     
     if periodo == 'ano':
