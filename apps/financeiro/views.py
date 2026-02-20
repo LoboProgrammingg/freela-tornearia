@@ -761,13 +761,19 @@ def _gerar_pdf_bytes_venda(venda):
     
     for idx, item in enumerate(venda.itens.all(), 1):
         tipo_badge = "[SERVIÇO]" if item.item.tipo == 'servico' else "[PRODUTO]"
-        descricao = f"{item.item.nome}"
-        if item.descricao_adicional:
-            descricao += f" - {item.descricao_adicional}"
+        nome_item = item.item.nome
+        descricao_item = item.item.descricao
+        descricao_adicional = item.descricao_adicional
+        
+        conteudo_descricao = f"<font size='7' color='#718096'>{tipo_badge}</font> <b>{nome_item}</b>"
+        if descricao_item:
+            conteudo_descricao += f"<br/><font size='8' color='#4a5568'><i>{descricao_item}</i></font>"
+        if descricao_adicional:
+            conteudo_descricao += f"<br/><font size='8' color='#2b6cb0'>Obs: {descricao_adicional}</font>"
         
         dados_itens.append([
             Paragraph(str(idx), style_info),
-            Paragraph(f"<font size='7' color='#718096'>{tipo_badge}</font> {descricao}", style_info),
+            Paragraph(conteudo_descricao, style_info),
             Paragraph(str(item.quantidade), style_info),
             Paragraph(f"R$ {item.valor_unitario:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), style_info),
             Paragraph(f"R$ {item.total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), style_info)
@@ -790,7 +796,8 @@ def _gerar_pdf_bytes_venda(venda):
         ('BACKGROUND', (0, 1), (-1, -1), colors.white),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, COR_FUNDO]),
         ('GRID', (0, 0), (-1, -1), 0.5, COR_BORDA),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('VALIGN', (0, 0), (-1, 0), 'MIDDLE'),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),
     ]))
     elements.append(tabela_itens)
     elements.append(Spacer(1, 15))
