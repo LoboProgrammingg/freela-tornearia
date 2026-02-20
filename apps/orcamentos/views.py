@@ -403,6 +403,13 @@ def _gerar_pdf_bytes(orcamento):
         spaceAfter=6
     )
     
+    item_cell_style = ParagraphStyle(
+        'ItemCellStyle',
+        parent=styles['Normal'],
+        fontSize=9,
+        leading=12
+    )
+    
     try:
         config = ConfiguracaoEmpresa.objects.get(pk=1)
         empresa_nome = config.nome
@@ -435,30 +442,41 @@ def _gerar_pdf_bytes(orcamento):
     elements.append(Paragraph(f"<b>Validade:</b> {orcamento.validade.strftime('%d/%m/%Y')}", info_style))
     elements.append(Spacer(1, 20))
     
-    data = [['Item', 'Descrição', 'Qtd', 'Valor Unit.', 'Total']]
+    data = [['Item / Descrição', 'Qtd', 'Valor Unit.', 'Total']]
     for item in orcamento.itens.all():
+        nome_item = item.item.nome
+        descricao_item = item.item.descricao
+        descricao_adicional = item.descricao_adicional
+        
+        item_content = f"<b>{nome_item}</b>"
+        if descricao_item:
+            item_content += f"<br/><i><font size='8' color='#4b5563'>{descricao_item}</font></i>"
+        if descricao_adicional:
+            item_content += f"<br/><font size='8' color='#059669'>Obs: {descricao_adicional}</font>"
+        
         data.append([
-            item.item.nome,
-            item.descricao_adicional or item.item.descricao or '-',
+            Paragraph(item_content, item_cell_style),
             str(item.quantidade),
             f"R$ {item.valor_unitario:.2f}",
             f"R$ {item.total:.2f}"
         ])
     
-    table = Table(data, colWidths=[4*cm, 6*cm, 1.5*cm, 2.5*cm, 2.5*cm])
+    table = Table(data, colWidths=[9*cm, 1.5*cm, 3*cm, 3*cm])
     table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1f2937')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (1, 1), (1, -1), 'LEFT'),
+        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
+        ('ALIGN', (0, 1), (0, -1), 'LEFT'),
+        ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
         ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#f9fafb')),
         ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#d1d5db')),
         ('FONTSIZE', (0, 1), (-1, -1), 9),
-        ('TOPPADDING', (0, 1), (-1, -1), 8),
-        ('BOTTOMPADDING', (0, 1), (-1, -1), 8),
+        ('TOPPADDING', (0, 1), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 1), (-1, -1), 10),
     ]))
     elements.append(table)
     elements.append(Spacer(1, 20))
